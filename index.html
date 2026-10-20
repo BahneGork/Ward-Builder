@@ -36,7 +36,29 @@
     margin: 0; font-family: "Courier New", ui-monospace, monospace;
     font-size: 0.65rem; color: var(--ink-soft); letter-spacing: 0.03em;
   }
-  #stats { display: flex; gap: 16px; flex-wrap: wrap; font-family: "Courier New", ui-monospace, monospace; font-size: 0.72rem; max-width: 60vw; }
+  #stats { display: flex; gap: 16px; flex-wrap: wrap; font-family: "Courier New", ui-monospace, monospace; font-size: 0.72rem; flex-basis: 100%; }
+  #topbar > div:first-child { flex: 1 1 0; min-width: 0; }
+  #menubar { flex: none; display: flex; gap: 6px; align-items: flex-start; }
+  #menubar > button { width: auto; margin-top: 0; }
+  .menu { position: relative; }
+  .menu > summary {
+    list-style: none; cursor: pointer; user-select: none;
+    font-family: "Courier New", ui-monospace, monospace; font-size: 0.7rem; letter-spacing: 0.04em; text-transform: uppercase;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--paper-edge); border-radius: 2px; padding: 7px 12px;
+  }
+  .menu > summary::-webkit-details-marker { display: none; }
+  .menu > summary::marker { content: ""; }
+  .menu > summary::after { content: " \25BE"; color: var(--ink-soft); }
+  .menu > summary:hover, .menu[open] > summary { background: var(--paper-edge); }
+  .menu > .container-body {
+    position: absolute; right: 0; top: calc(100% + 4px); z-index: 1000; width: 270px; max-height: 75vh; overflow-y: auto;
+    background: var(--paper-deep); border: 1px solid var(--paper-edge); border-radius: 4px; padding: 12px;
+    box-shadow: 0 6px 20px var(--shadow);
+  }
+  .menu > .container-body h3 {
+    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft);
+    margin: 0 0 8px; font-family: "Courier New", ui-monospace, monospace;
+  }
   #stats .stat b { display: block; font-size: 1.05rem; color: var(--ink); font-family: Georgia, serif; }
   #stats .stat span { color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.05em; }
   #stats .warn b { color: var(--danger); }
@@ -279,25 +301,13 @@
     <h1>Ward Builder <span id="city-label"></span></h1>
     <p id="hint">double-click empty space: new ward/power center &middot; double-click one: rename it &middot; click two wards: toggle border &middot; drag: move &middot; drag empty space: pan &middot; scroll: zoom &middot; ctrl/cmd+Z: undo</p>
   </div>
-  <div id="stats">
-    <div class="stat"><b id="stat-wards">0</b><span>wards</span></div>
-    <div class="stat"><b id="stat-districts">0</b><span>districts</span></div>
-    <div class="stat warn"><b id="stat-unassigned">0</b><span>unassigned</span></div>
-    <div class="stat"><b id="stat-edges">0</b><span>borders</span></div>
-    <div class="stat"><b id="stat-choke">0</b><span>chokepoints</span></div>
-    <div class="stat warn"><b id="stat-isolated">0</b><span>isolated</span></div>
-    <div id="stats-factions"></div>
-  </div>
-</div>
-<div id="main">
-  <div id="canvas-wrap"><canvas id="cv"></canvas><div id="pc-tooltip"></div></div>
-  <div id="sidebar">
-    <details class="sidebar-container" data-container-id="actions" open>
-      <summary>Actions</summary>
+  <div id="menubar">
+    <button id="undo-btn" type="button" disabled>Undo</button>
+    <details class="menu" data-menu="actions">
+      <summary>Layout</summary>
       <div class="container-body">
         <h3>Mode</h3>
         <button id="new-city-btn" type="button" class="danger">New city...</button>
-        <button id="undo-btn" type="button" disabled>Undo</button>
         <button id="reset-view" type="button">Reset view</button>
         <button id="randomize-layout" type="button">Generate new layout</button>
         <div class="layout-substyle-row">
@@ -316,18 +326,20 @@
         <button id="water-clear" type="button">Clear water</button>
       </div>
     </details>
-    <details class="sidebar-container" data-container-id="canvas" open>
-      <summary>Canvas Controls</summary>
+    <details class="menu" data-menu="quickcreate">
+      <summary>Create</summary>
       <div class="container-body">
-        <h3>Manipulation</h3>
-        <button id="select-mode" type="button">Select / move</button>
-        <button id="delete-mode" type="button" class="danger">Delete mode: off</button>
-        <button id="place-mode" type="button">Placing: Wards</button>
-        <button id="water-paint" type="button">Paint water: off</button>
+        <div class="row"><input id="bulk-ward-count" type="number" min="1" max="200" value="10"><button id="bulk-ward-btn" type="button">Add wards</button></div>
+        <div class="row"><input id="bulk-district-count" type="number" min="1" max="20" value="4"><button id="bulk-district-btn" type="button">Add districts</button></div>
+        <label class="hint-small" style="display:flex;align-items:center;gap:5px;margin:-2px 0 4px;"><input id="bulk-district-autoassign" type="checkbox" checked style="width:auto;margin:0;">auto-assign unclaimed wards</label>
+        <div class="row"><input id="bulk-faction-count" type="number" min="1" max="20" value="3"><button id="bulk-faction-btn" type="button">Add factions</button></div>
+        <button id="add-pcenter-btn" type="button">+ Add power center</button>
+        <button id="pcwizard-btn" type="button">Power center wizard...</button>
+        <button id="add-poi-btn" type="button">+ Add point of interest</button>
       </div>
     </details>
-    <details class="sidebar-container" data-container-id="views" open>
-      <summary>Views</summary>
+    <details class="menu" data-menu="views">
+      <summary>View</summary>
       <div class="container-body">
         <h3>Display</h3>
         <button id="toggle-ward-nodes" type="button">Ward nodes: hidden</button>
@@ -345,45 +357,7 @@
         <button id="toggle-name-language" type="button">Names: English</button>
       </div>
     </details>
-    <details class="sidebar-container" data-container-id="quickcreate" open>
-      <summary>Quick Create</summary>
-      <div class="container-body">
-        <div class="row"><input id="bulk-ward-count" type="number" min="1" max="200" value="10"><button id="bulk-ward-btn" type="button">Add wards</button></div>
-        <div class="row"><input id="bulk-district-count" type="number" min="1" max="20" value="4"><button id="bulk-district-btn" type="button">Add districts</button></div>
-        <label class="hint-small" style="display:flex;align-items:center;gap:5px;margin:-2px 0 4px;"><input id="bulk-district-autoassign" type="checkbox" checked style="width:auto;margin:0;">auto-assign unclaimed wards</label>
-        <div class="row"><input id="bulk-faction-count" type="number" min="1" max="20" value="3"><button id="bulk-faction-btn" type="button">Add factions</button></div>
-        <button id="add-pcenter-btn" type="button">+ Add power center</button>
-        <button id="pcwizard-btn" type="button">Power center wizard...</button>
-        <button id="add-poi-btn" type="button">+ Add point of interest</button>
-      </div>
-    </details>
-    <details class="sidebar-container" data-container-id="citydata" open>
-      <summary>City Data</summary>
-      <div class="container-body">
-        <h3>Districts <span class="hint-small">(geography)</span></h3>
-        <div id="district-list"></div>
-        <button id="map-districts-btn" type="button">Map districts → factions</button>
-        <hr>
-        <h3>Factions <span class="hint-small">(political control)</span></h3>
-        <div id="faction-list"></div>
-        <hr>
-        <h3>Relationships <span class="hint-small">(alliances &amp; rivalries)</span></h3>
-        <div id="relationship-list"></div>
-        <button id="relationship-wizard-btn" type="button">Relationship wizard...</button>
-        <hr>
-        <h3>Wards <span class="hint-small" id="ward-count-hint"></span></h3>
-        <input id="ward-search" type="text" placeholder="Filter wards by name...">
-        <button id="toggle-ward-grouping" type="button">Group by district/faction: off</button>
-        <div id="ward-list"></div>
-        <hr>
-        <h3>Power centers</h3>
-        <div id="pcenter-list"></div>
-        <hr>
-        <h3>Points of Interest <span class="hint-small">(bases, landmarks, services)</span></h3>
-        <div id="poi-list"></div>
-      </div>
-    </details>
-    <details class="sidebar-container" data-container-id="file" open>
+    <details class="menu" data-menu="file">
       <summary>File</summary>
       <div class="container-body">
         <button id="legend-btn" type="button">Show legend</button>
@@ -410,6 +384,56 @@
         <button id="gh-details-btn" type="button">City details...</button>
         <button id="gh-clone-btn" type="button">Clone to new campaign...</button>
         <button id="gh-settings-btn" type="button">GitHub settings...</button>
+      </div>
+    </details>
+  </div>
+  <div id="stats">
+    <div class="stat"><b id="stat-wards">0</b><span>wards</span></div>
+    <div class="stat"><b id="stat-districts">0</b><span>districts</span></div>
+    <div class="stat warn"><b id="stat-unassigned">0</b><span>unassigned</span></div>
+    <div class="stat"><b id="stat-edges">0</b><span>borders</span></div>
+    <div class="stat"><b id="stat-choke">0</b><span>chokepoints</span></div>
+    <div class="stat warn"><b id="stat-isolated">0</b><span>isolated</span></div>
+    <div id="stats-factions"></div>
+  </div>
+</div>
+<div id="main">
+  <div id="canvas-wrap"><canvas id="cv"></canvas><div id="pc-tooltip"></div></div>
+  <div id="sidebar">
+    <details class="sidebar-container" data-container-id="canvas" open>
+      <summary>Canvas Controls</summary>
+      <div class="container-body">
+        <h3>Manipulation</h3>
+        <button id="select-mode" type="button">Select / move</button>
+        <button id="delete-mode" type="button" class="danger">Delete mode: off</button>
+        <button id="place-mode" type="button">Placing: Wards</button>
+        <button id="water-paint" type="button">Paint water: off</button>
+      </div>
+    </details>
+    <details class="sidebar-container" data-container-id="citydata" open>
+      <summary>City Data</summary>
+      <div class="container-body">
+        <h3>Districts <span class="hint-small">(geography)</span></h3>
+        <div id="district-list"></div>
+        <button id="map-districts-btn" type="button">Map districts → factions</button>
+        <hr>
+        <h3>Factions <span class="hint-small">(political control)</span></h3>
+        <div id="faction-list"></div>
+        <hr>
+        <h3>Relationships <span class="hint-small">(alliances &amp; rivalries)</span></h3>
+        <div id="relationship-list"></div>
+        <button id="relationship-wizard-btn" type="button">Relationship wizard...</button>
+        <hr>
+        <h3>Wards <span class="hint-small" id="ward-count-hint"></span></h3>
+        <input id="ward-search" type="text" placeholder="Filter wards by name...">
+        <button id="toggle-ward-grouping" type="button">Group by district/faction: off</button>
+        <div id="ward-list"></div>
+        <hr>
+        <h3>Power centers</h3>
+        <div id="pcenter-list"></div>
+        <hr>
+        <h3>Points of Interest <span class="hint-small">(bases, landmarks, services)</span></h3>
+        <div id="poi-list"></div>
       </div>
     </details>
   </div>
@@ -5199,6 +5223,26 @@
   });
   loadSidebarCollapse();
   ghFile = loadKey(GH_FILE_KEY);
+
+  // ---- top menus: one open at a time, closed by a click elsewhere or Esc. A button inside closes its
+  // menu, except in View, so several layers can be toggled in a row, and the layout style picks, which
+  // only choose what "Generate new layout" makes. ----
+  var topMenus = Array.prototype.slice.call(document.querySelectorAll("#menubar .menu"));
+  function closeMenus(except) {
+    topMenus.forEach(function (m) { if (m !== except) m.open = false; });
+  }
+  topMenus.forEach(function (m) {
+    m.addEventListener("toggle", function () { if (m.open) closeMenus(m); });
+    m.querySelector(".container-body").addEventListener("click", function (e) {
+      if (m.dataset.menu !== "views" && e.target.closest("button") && !e.target.closest(".layout-substyle-row")) m.open = false;
+    });
+  });
+  document.addEventListener("pointerdown", function (e) {
+    if (!e.target.closest("#menubar")) closeMenus();
+  }, true);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeMenus();
+  });
 
   loadFromDOM();
   renderDistrictList();
