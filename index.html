@@ -121,6 +121,9 @@
     flex: none; color: var(--ink-soft); opacity: 0.55; padding: 0 2px; border-radius: 2px;
   }
   .swatch-del:hover { opacity: 1; color: var(--danger); background: var(--paper-edge); }
+  .swatch-link { flex: none; font-size: 0.72rem; color: var(--ink-soft); opacity: 0.35; padding: 0 2px; border-radius: 2px; cursor: pointer; }
+  .swatch-link.on { opacity: 1; color: var(--brass); }
+  .swatch-link:hover { opacity: 1; background: var(--paper-edge); }
   #ward-list { max-height: 260px; overflow-y: auto; border: 1px solid var(--paper-edge); border-radius: 3px; padding: 2px; }
   #ward-search {
     width: 100%; box-sizing: border-box; font-family: Georgia, serif; font-size: 0.78rem;
@@ -923,7 +926,7 @@
       return { id: el.dataset.id, name: el.dataset.name, nameDa: el.dataset.nameDa || "", color: el.dataset.color, theme: el.dataset.theme || "" };
     });
     factions = Array.prototype.map.call(store.querySelectorAll(".faction"), function (el) {
-      return { id: el.dataset.id, name: el.dataset.name, nameDa: el.dataset.nameDa || "", color: el.dataset.color };
+      return { id: el.dataset.id, name: el.dataset.name, nameDa: el.dataset.nameDa || "", color: el.dataset.color, note: el.dataset.note || "" };
     });
     powerCenters = Array.prototype.map.call(store.querySelectorAll(".pcenter"), function (el) {
       return { id: el.dataset.id, name: el.dataset.name, nameDa: el.dataset.nameDa || "", category: el.dataset.category || "", subcategory: el.dataset.subcategory || "", faction: el.dataset.faction || "", x: +el.dataset.x, y: +el.dataset.y };
@@ -1026,6 +1029,7 @@
       el.dataset.name = f.name;
       el.dataset.nameDa = f.nameDa || "";
       el.dataset.color = f.color;
+      el.dataset.note = f.note || "";
       store.appendChild(el);
     });
     autosaveNow();
@@ -2503,7 +2507,38 @@
       row.appendChild(colorInput);
       row.appendChild(nameSpan);
       row.appendChild(resizeInput);
+      // the note this faction is (its title in the GM's notes, e.g. an Obsidian note), so other tools such as
+      // a campaign atlas can link the faction to it
+      var linkBtn = document.createElement("span");
+      linkBtn.className = "swatch-link" + (f.note ? " on" : "");
+      linkBtn.textContent = "\u{1F517}";
+      linkBtn.title = f.note ? "Linked to the note: " + f.note + " (click to change)" : "Link to a note (click)";
+      linkBtn.addEventListener("dblclick", function (ce) { ce.stopPropagation(); });
+      linkBtn.addEventListener("click", function (ce) {
+        ce.stopPropagation();
+        if (factionClickTimer) { clearTimeout(factionClickTimer); factionClickTimer = null; }
+        var input = document.createElement("input");
+        input.type = "text";
+        input.value = f.note || "";
+        input.placeholder = "Note title, e.g. House Navarre";
+        input.className = "dname-edit";
+        row.replaceChild(input, nameSpan);
+        input.focus();
+        input.select();
+        var cancelled = false;
+        input.addEventListener("blur", function () {
+          if (!cancelled) { f.note = input.value.trim().replace(/^\[\[|\]\]$/g, ""); syncFactionsFull(); }
+          renderFactionList();
+        });
+        input.addEventListener("keydown", function (ke) {
+          if (ke.key === "Enter") { ke.preventDefault(); input.blur(); }
+          if (ke.key === "Escape") { cancelled = true; input.blur(); }
+        });
+        input.addEventListener("click", function (e2) { e2.stopPropagation(); });
+        input.addEventListener("dblclick", function (e2) { e2.stopPropagation(); });
+      });
       row.appendChild(resizeBtn);
+      row.appendChild(linkBtn);
       row.appendChild(delBtn);
       row.addEventListener("click", function () {
         if (factionClickTimer) clearTimeout(factionClickTimer);
@@ -3823,7 +3858,7 @@
     });
     edges = (data.edges || []).map(function (e) { return { from: e.from, to: e.to }; });
     districts = (data.districts || []).map(function (d) { return { id: d.id, name: d.name, nameDa: d.nameDa || "", color: d.color, theme: d.theme || "" }; });
-    factions = (data.factions || []).map(function (f) { return { id: f.id, name: f.name, nameDa: f.nameDa || "", color: f.color }; });
+    factions = (data.factions || []).map(function (f) { return { id: f.id, name: f.name, nameDa: f.nameDa || "", color: f.color, note: f.note || "" }; });
     powerCenters = (data.powerCenters || []).map(function (p) { return { id: p.id, name: p.name, nameDa: p.nameDa || "", category: p.category || "", subcategory: p.subcategory || "", faction: p.faction || "", x: +p.x, y: +p.y }; });
     relationships = (data.relationships || []).map(function (r) { return { id: r.id, a: r.a, b: r.b, type: r.type, direction: r.direction || "mutual" }; });
     pois = (data.pois || []).map(function (p) { return { id: p.id, name: p.name, nameDa: p.nameDa || "", kind: p.kind || p.type || "Base", category: p.category || "", subtype: p.subtype || "", ward: p.ward || "", faction: p.faction || "", tier: p.tier || "" }; });

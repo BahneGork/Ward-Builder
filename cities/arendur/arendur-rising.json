@@ -2265,97 +2265,113 @@
       "id": "f1",
       "name": "The Crown",
       "nameDa": "",
-      "color": "#fcff3d"
+      "color": "#fcff3d",
+      "note": ""
     },
     {
       "id": "f2",
       "name": "The Ruby Throne",
       "nameDa": "",
-      "color": "#d9ead3"
+      "color": "#d9ead3",
+      "note": "The Ruby Throne"
     },
     {
       "id": "f3",
       "name": "House Navarre",
       "nameDa": "",
-      "color": "#990000"
+      "color": "#990000",
+      "note": "House Navarre"
     },
     {
       "id": "f4",
       "name": "House Omero",
       "nameDa": "",
-      "color": "#1155cc"
+      "color": "#1155cc",
+      "note": "House Omero"
     },
     {
       "id": "f5",
       "name": "House Alvares",
       "nameDa": "",
-      "color": "#38761d"
+      "color": "#38761d",
+      "note": "House Alvares"
     },
     {
       "id": "f6",
       "name": "House Volantis",
       "nameDa": "",
-      "color": "#e69138"
+      "color": "#e69138",
+      "note": "House Volantis"
     },
     {
       "id": "f7",
       "name": "Sword n Shield",
       "nameDa": "",
-      "color": "#c9daf8"
+      "color": "#c9daf8",
+      "note": "Sword n Shield"
     },
     {
       "id": "f8",
       "name": "The Ferriers",
       "nameDa": "",
-      "color": "#a64d79"
+      "color": "#a64d79",
+      "note": ""
     },
     {
       "id": "f9",
       "name": "The Legend",
       "nameDa": "",
-      "color": "#fce5cd"
+      "color": "#fce5cd",
+      "note": ""
     },
     {
       "id": "f10",
       "name": "The Tower",
       "nameDa": "",
-      "color": "#46bdc6"
+      "color": "#46bdc6",
+      "note": "Blue Guardians"
     },
     {
       "id": "f11",
       "name": "Eyes of the Many-Headed Snake",
       "nameDa": "",
-      "color": "#1f9e8a"
+      "color": "#1f9e8a",
+      "note": "Eyes of the many headed snake"
     },
     {
       "id": "f12",
       "name": "The Pocket",
       "nameDa": "",
-      "color": "#6b6b6b"
+      "color": "#6b6b6b",
+      "note": ""
     },
     {
       "id": "f13",
       "name": "Nine Silver",
       "nameDa": "",
-      "color": "#9a9aa4"
+      "color": "#9a9aa4",
+      "note": ""
     },
     {
       "id": "f14",
       "name": "Gilded Square",
       "nameDa": "",
-      "color": "#d4af37"
+      "color": "#d4af37",
+      "note": ""
     },
     {
       "id": "f15",
       "name": "City Watch of Arendur",
       "nameDa": "",
-      "color": "#3a5a78"
+      "color": "#3a5a78",
+      "note": "Arendur Cityguard"
     },
     {
       "id": "f16",
       "name": "Carnival Row",
       "nameDa": "",
-      "color": "#c65fa6"
+      "color": "#c65fa6",
+      "note": ""
     }
   ],
   "powerCenters": [
