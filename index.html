@@ -4314,8 +4314,11 @@
       return { sha: f.sha, data: JSON.parse(base64ToUtf8(f.content)) };
     });
   }
-  function ghRemoteSha(path, branch) {
-    return ghApi(ghContentsUrl(path) + "?ref=" + encodeURIComponent(branch)).then(function (f) { return f.sha; }, function (e) {
+  // the newest state of a file on GitHub: { sha, text }, or null when it doesn't exist yet
+  function ghRemoteFile(path, branch) {
+    return ghApi(ghContentsUrl(path) + "?ref=" + encodeURIComponent(branch)).then(function (f) {
+      return { sha: f.sha, text: base64ToUtf8(f.content) };
+    }, function (e) {
       if (e.status === 404) return null;
       throw e;
     });
@@ -4472,9 +4475,9 @@
           row.appendChild(el("span", {}, c.commit.message.split("\n")[0] + (i === 0 ? " (newest)" : "")));
           row.addEventListener("click", function () {
             showMsg(body, "Opening...");
-            Promise.all([ghReadFile(path, c.sha), ghRemoteSha(path, branch)]).then(function (r) {
+            Promise.all([ghReadFile(path, c.sha), ghRemoteFile(path, branch)]).then(function (r) {
               // keep the newest sha, so saving this older state counts as a normal save on top of it
-              loadCityFile(path, r[0].data, r[1]);
+              loadCityFile(path, r[0].data, r[1].sha);
               ghCloseDialog();
             }, function (e) { showMsg(body, e.message, true); });
           });
@@ -4539,8 +4542,11 @@
         var branch;
         ghBranch().then(function (b) {
           branch = b;
-          return ghRemoteSha(path, b);
-        }).then(function (remoteSha) {
+          return ghRemoteFile(path, b);
+        }).then(function (remote) {
+          var remoteSha = remote && remote.sha;
+          var payload = JSON.stringify(buildFullState(), null, 2) + "\n";
+          if (remote && remote.text === payload) return { unchanged: true, content: { sha: remoteSha } };
           var ours = ghFile && ghFile.repo === s.repo && ghFile.path === path;
           if (remoteSha && !(ours && ghFile.sha === remoteSha)) {
             var question = ours ?
@@ -4548,10 +4554,11 @@
               path + " already exists on GitHub and isn't the file you opened. Saving replaces it, though History keeps the old state. Save anyway?";
             if (!window.confirm(question)) return null;
           }
-          var stamp = new Date().toISOString().slice(0, 16).replace("T", " ");
+          var now = new Date(), pad = function (n) { return (n < 10 ? "0" : "") + n; };
+          var stamp = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate()) + " " + pad(now.getHours()) + ":" + pad(now.getMinutes());
           return ghApi(ghContentsUrl(path), { method: "PUT", body: {
             message: note.value.trim() || (cityInfo.name + " (" + cityInfo.version + "), " + stamp),
-            content: utf8ToBase64(JSON.stringify(buildFullState(), null, 2) + "\n"),
+            content: utf8ToBase64(payload),
             sha: remoteSha || undefined,
             branch: branch
           } });
@@ -4559,7 +4566,7 @@
           go.disabled = false;
           if (!res) { showMsg(body, "Not saved."); return; }
           setGhFile({ repo: s.repo, path: path, sha: res.content.sha });
-          showMsg(body, "Saved to " + s.repo + "/" + path + ".");
+          showMsg(body, res.unchanged ? "No changes since the last save, so nothing was saved." : "Saved to " + s.repo + "/" + path + ".");
         }).catch(function (e) { go.disabled = false; showMsg(body, e.message, true); });
       });
     });
