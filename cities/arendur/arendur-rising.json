@@ -1,5 +1,11 @@
 {
   "version": 1,
+  "city": {
+    "id": "arendur",
+    "name": "Arendur",
+    "version": "arendur-rising",
+    "campaign": "Arendur Rising"
+  },
   "wards": [
     {
       "id": "lon",
@@ -2515,11 +2521,13 @@
     }
   ],
   "relationships": [],
+  "pois": [],
   "nextWard": 88,
   "nextDistrict": 18,
   "nextPCenter": 21,
   "nextFaction": 17,
   "nextRelationship": 1,
+  "nextPoi": 1,
   "layoutStyle": "ring",
   "customEnclosure": [
     {
@@ -2559,5 +2567,6 @@
       "y": 1081.3253083789934
     }
   ],
-  "customSubcategories": {}
+  "customSubcategories": {},
+  "customPOISubtypes": {}
 }
