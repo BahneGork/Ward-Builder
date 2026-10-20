@@ -2273,42 +2273,42 @@
       "name": "The Ruby Throne",
       "nameDa": "",
       "color": "#d9ead3",
-      "note": "The Ruby Throne"
+      "note": ""
     },
     {
       "id": "f3",
       "name": "House Navarre",
       "nameDa": "",
       "color": "#990000",
-      "note": "House Navarre"
+      "note": ""
     },
     {
       "id": "f4",
       "name": "House Omero",
       "nameDa": "",
       "color": "#1155cc",
-      "note": "House Omero"
+      "note": ""
     },
     {
       "id": "f5",
       "name": "House Alvares",
       "nameDa": "",
       "color": "#38761d",
-      "note": "House Alvares"
+      "note": ""
     },
     {
       "id": "f6",
       "name": "House Volantis",
       "nameDa": "",
       "color": "#e69138",
-      "note": "House Volantis"
+      "note": ""
     },
     {
       "id": "f7",
       "name": "Sword n Shield",
       "nameDa": "",
       "color": "#c9daf8",
-      "note": "Sword n Shield"
+      "note": ""
     },
     {
       "id": "f8",
@@ -2329,14 +2329,14 @@
       "name": "The Tower",
       "nameDa": "",
       "color": "#46bdc6",
-      "note": "Blue Guardians"
+      "note": ""
     },
     {
       "id": "f11",
       "name": "Eyes of the Many-Headed Snake",
       "nameDa": "",
       "color": "#1f9e8a",
-      "note": "Eyes of the many headed snake"
+      "note": ""
     },
     {
       "id": "f12",
@@ -2364,7 +2364,7 @@
       "name": "City Watch of Arendur",
       "nameDa": "",
       "color": "#3a5a78",
-      "note": "Arendur Cityguard"
+      "note": ""
     },
     {
       "id": "f16",
@@ -2512,8 +2512,8 @@
       "category": "Criminal/Underworld",
       "subcategory": "Black Market",
       "faction": "f11",
-      "x": 846.5669166340589,
-      "y": 626.9127018838357
+      "x": 844.1753350014058,
+      "y": 604.5912733124071
     },
     {
       "id": "pc17",
@@ -2522,8 +2522,8 @@
       "category": "Criminal/Underworld",
       "subcategory": "Safehouse",
       "faction": "f13",
-      "x": 681.5669166340589,
-      "y": 722.1754963001239
+      "x": 655.2595186748753,
+      "y": 702.2456493613485
     },
     {
       "id": "pc19",
@@ -2532,8 +2532,8 @@
       "category": "Law",
       "subcategory": "Courthouse",
       "faction": "f15",
-      "x": 681.5669166340589,
-      "y": 531.6499074675475
+      "x": 703.0911513279365,
+      "y": 523.6779686920373
     }
   ],
   "relationships": [],
