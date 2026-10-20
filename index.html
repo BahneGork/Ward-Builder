@@ -4400,8 +4400,9 @@
     var branch = field(body, "Branch (optional)", textInput(s.branch), "Leave empty to use the repository's default branch.");
     var token = field(body, "Token (needed only for saving)", textInput(s.token, "password"),
       "<a href=\"https://github.com/settings/personal-access-tokens/new\" target=\"_blank\" rel=\"noopener\">Create a fine-grained token</a>: " +
-      "under <i>Repository access</i> choose <i>Only select repositories</i> and pick this repository, then under <i>Permissions</i> set " +
-      "<i>Contents</i> to <i>Read and write</i>. The token is stored only in this browser.");
+      "under <i>Repository access</i> choose <i>Only select repositories</i> and pick this repository. Then under <i>Permissions</i> click " +
+      "<i>Add permissions</i>, choose <i>Contents</i>, and change its access from <i>Read-only</i> to <i>Read and write</i> " +
+      "(<i>Metadata: Read-only</i> is added by itself). The token is stored only in this browser.");
     var saveBtn = body.appendChild(el("button", { type: "button", "class": "danger" }, "Save and test"));
     var forgetBtn = body.appendChild(el("button", { type: "button" }, "Forget token"));
     saveBtn.addEventListener("click", function () {

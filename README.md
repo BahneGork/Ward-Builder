@@ -36,7 +36,8 @@ from, so a copy of the tool in your own repository reads your own cities. Opened
 under GitHub settings.
 
 **Reading** a public repository needs nothing. **Saving** needs a
-[fine-grained token](https://github.com/settings/personal-access-tokens/new) limited to that one repository, with
-*Contents: Read and write*. The token is stored only in your browser.
+[fine-grained token](https://github.com/settings/personal-access-tokens/new) limited to that one repository: under
+*Repository access* choose *Only select repositories* and pick it, then under *Permissions* click *Add permissions*,
+choose *Contents* and set it to *Read and write*. The token is stored only in your browser.
 
 Everything in this repository is public.
