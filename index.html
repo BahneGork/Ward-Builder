@@ -130,7 +130,7 @@
     border-radius: 2px; padding: 6px 4px; text-align: center;
   }
   .row button { margin-top: 0; flex: 1 1 auto; }
-  #pcwizard-overlay, #mapdistricts-overlay, #newcity-overlay, #export-overlay, #legend-overlay, #stats-overlay, #relationship-wizard-overlay {
+  #pcwizard-overlay, #mapdistricts-overlay, #newcity-overlay, #export-overlay, #legend-overlay, #stats-overlay, #relationship-wizard-overlay, #gh-overlay {
     display: none; position: fixed; inset: 0; z-index: 2000;
     background: rgba(20, 17, 12, 0.55);
     align-items: center; justify-content: center;
@@ -143,6 +143,25 @@
     box-shadow: 0 8px 30px var(--shadow);
   }
   #export-box h2, #legend-head h2, .wizard-box h2 { margin: 0; font-size: 0.95rem; }
+  .text-field {
+    width: 100%; box-sizing: border-box; font-family: Georgia, serif; font-size: 0.82rem;
+    background: var(--paper-deep); color: var(--ink); border: 1px solid var(--paper-edge);
+    border-radius: 3px; padding: 5px 7px;
+  }
+  #city-label { font-weight: normal; color: var(--ink-soft); }
+  #gh-body { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+  #gh-body p { margin: 0; font-size: 0.82rem; line-height: 1.45; }
+  #gh-body a { color: var(--brass); }
+  .gh-msg { font-size: 0.82rem; padding: 6px 8px; border-radius: 3px; background: var(--paper-deep); }
+  .gh-msg.error { color: var(--danger); }
+  .gh-list { display: flex; flex-direction: column; border: 1px solid var(--paper-edge); border-radius: 3px; }
+  .gh-list-head {
+    font-family: "Courier New", ui-monospace, monospace; font-size: 0.68rem; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--ink-soft); padding: 7px 8px 3px;
+  }
+  .gh-row { display: flex; gap: 10px; align-items: baseline; padding: 6px 8px; cursor: pointer; font-size: 0.82rem; }
+  .gh-row:hover { background: var(--paper-edge); }
+  .gh-row .gh-when { flex: none; font-family: "Courier New", ui-monospace, monospace; font-size: 0.7rem; color: var(--ink-soft); }
   .newcity-field label { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); margin-bottom: 4px; }
   .newcity-pick { display: flex; flex-wrap: wrap; gap: 6px; }
   .layout-substyle-row { display: flex; gap: 4px; margin: 2px 0 6px 14px; }
@@ -257,7 +276,7 @@
 </style>
 <div id="topbar">
   <div>
-    <h1>Ward Builder</h1>
+    <h1>Ward Builder <span id="city-label"></span></h1>
     <p id="hint">double-click empty space: new ward/power center &middot; double-click one: rename it &middot; click two wards: toggle border &middot; drag: move &middot; drag empty space: pan &middot; scroll: zoom &middot; ctrl/cmd+Z: undo</p>
   </div>
   <div id="stats">
@@ -383,6 +402,14 @@
           </select>
           <button id="export-list-btn" type="button">Export list as TXT</button>
         </div>
+        <hr>
+        <h3>GitHub <span class="hint-small" id="gh-status"></span></h3>
+        <button id="gh-open-btn" type="button">Open city from GitHub...</button>
+        <button id="gh-save-btn" type="button">Save to GitHub...</button>
+        <button id="gh-history-btn" type="button">History...</button>
+        <button id="gh-details-btn" type="button">City details...</button>
+        <button id="gh-clone-btn" type="button">Clone to new campaign...</button>
+        <button id="gh-settings-btn" type="button">GitHub settings...</button>
       </div>
     </details>
   </div>
@@ -501,6 +528,18 @@
       <button id="newcity-cancel" type="button">Close</button>
     </div>
     <div class="newcity-field">
+      <label>City name</label>
+      <input id="newcity-name" class="text-field" type="text" placeholder="e.g. Arendur">
+    </div>
+    <div class="newcity-field">
+      <label>Campaign <span class="hint-small">(optional)</span></label>
+      <input id="newcity-campaign" class="text-field" type="text" placeholder="e.g. Arendur Rising">
+    </div>
+    <div class="newcity-field">
+      <label>Year <span class="hint-small">(optional, in-game)</span></label>
+      <input id="newcity-year" class="text-field" type="text">
+    </div>
+    <div class="newcity-field">
       <label>Ward count</label>
       <input id="newcity-count" type="number" min="0" max="200" value="40">
     </div>
@@ -526,7 +565,17 @@
   </div>
 </div>
 
-<div id="data-store" artifact-sync style="display:none">
+<div id="gh-overlay">
+  <div class="wizard-box">
+    <div id="legend-head">
+      <h2 id="gh-title"></h2>
+      <button id="gh-close" type="button">Close</button>
+    </div>
+    <div id="gh-body"></div>
+  </div>
+</div>
+
+<div id="data-store" style="display:none">
   <div class="ward" data-id="lon" data-name="Zealgardthorpe" data-x="398" data-y="625" data-district="d1"></div>
   <div class="ward" data-id="lvp" data-name="Fenbarrow" data-x="364" data-y="537" data-district="d1"></div>
   <div class="ward" data-id="edi" data-name="Myrspan" data-x="385" data-y="482" data-district="d1"></div>
@@ -826,6 +875,8 @@
   var store = document.getElementById("data-store");
   var wards = [], edges = [], districts = [], powerCenters = [], factions = [], relationships = [], pois = [];
   var nextWard = 5, nextDistrict = 4, nextPCenter = 1, nextFaction = 1, nextRelationship = 1, nextPoi = 1;
+  // which city this is, and which version of it: { id, name, version, campaign, year } - saved as cities/<id>/<version>.json
+  var cityInfo = {};
   var POI_KINDS = ["Base", "Landmark", "Service"];
   var POI_TIERS = ["", "Cheap", "Average", "Expensive"];
   var undoStack = [];
@@ -3729,6 +3780,7 @@
   function buildFullState() {
     return {
       version: 1,
+      city: cityInfo,
       wards: wards, edges: edges, districts: districts, factions: factions, powerCenters: powerCenters, relationships: relationships, pois: pois,
       nextWard: nextWard, nextDistrict: nextDistrict, nextPCenter: nextPCenter, nextFaction: nextFaction, nextRelationship: nextRelationship, nextPoi: nextPoi,
       layoutStyle: layoutStyle, customEnclosure: customEnclosure, customSubcategories: customSubcategories, customPOISubtypes: customPOISubtypes
@@ -3766,6 +3818,8 @@
     customEnclosure = Array.isArray(data.customEnclosure) ? data.customEnclosure.map(function (p) { return { x: +p.x, y: +p.y }; }) : null;
     customSubcategories = (data.customSubcategories && typeof data.customSubcategories === "object") ? data.customSubcategories : {};
     customPOISubtypes = (data.customPOISubtypes && typeof data.customPOISubtypes === "object") ? data.customPOISubtypes : {};
+    cityInfo = cleanCityInfo(data.city);
+    updateCityLabel();
 
     Array.prototype.forEach.call(store.querySelectorAll(".ward,.edge,.district,.faction,.pcenter,.poi,.enclosure"), function (el) { el.remove(); });
     wards.forEach(syncWardEl);
@@ -3852,6 +3906,7 @@
       try {
         var data = JSON.parse(String(reader.result));
         applyFullState(data);
+        setGhFile(null); // a file from disk isn't linked to a file on GitHub
         autosaveNow();
       } catch (err) {
         window.alert && window.alert("Could not read that file as a city JSON.");
@@ -4092,6 +4147,12 @@
     wards = []; edges = []; districts = []; factions = []; powerCenters = []; relationships = []; pois = [];
     nextWard = 1; nextDistrict = 1; nextFaction = 1; nextPCenter = 1; nextPoi = 1;
     customEnclosure = null;
+    var newName = document.getElementById("newcity-name").value.trim();
+    var newCampaign = document.getElementById("newcity-campaign").value.trim();
+    cityInfo = cleanCityInfo({ id: slugify(newName), name: newName, version: slugify(newCampaign) || "base",
+      campaign: newCampaign, year: parseYear(document.getElementById("newcity-year").value) });
+    setGhFile(null);
+    updateCityLabel();
     selectedWard = null; selectedPCenter = null; armedDistrict = null; armedFaction = null;
     deleteMode = false; waterPaintMode = false;
     Array.prototype.forEach.call(store.querySelectorAll(".ward,.edge,.district,.faction,.pcenter,.poi,.enclosure"), function (el) { el.remove(); });
@@ -4141,6 +4202,369 @@
   document.getElementById("export-close").addEventListener("click", function () {
     document.getElementById("export-overlay").style.display = "none";
   });
+
+  // ---- cities on GitHub: open, history, save, clone ----
+  // A city file is one version of one city, at cities/<city id>/<version>.json in a GitHub repository.
+  // Each campaign that uses a city gets its own version (Clone); the history of a version is its git
+  // commits. Reading a public repository needs no token; saving needs the user's own token, which is
+  // kept only in this browser. The tool never has a repository built in: on GitHub Pages it reads the
+  // repository it is served from, anywhere else the user names one under GitHub settings.
+  var GH_SETTINGS_KEY = "ward-builder-github";   // { repo, branch, token }
+  var GH_FILE_KEY = "ward-builder-github-file";  // { repo, path, sha } - the file the open city was opened from or saved to
+  var ghFile = null;
+
+  function cleanCityInfo(c) {
+    c = (c && typeof c === "object") ? c : {};
+    var out = {};
+    ["id", "name", "version", "campaign"].forEach(function (k) { if (c[k]) out[k] = String(c[k]); });
+    if (c.year !== undefined && c.year !== null && c.year !== "") out.year = c.year;
+    return out;
+  }
+  function parseYear(s) {
+    s = String(s || "").trim();
+    return /^-?\d+$/.test(s) ? +s : s;
+  }
+  function slugify(s) {
+    return String(s || "").toLowerCase().replace(/æ/g, "ae").replace(/ø/g, "oe").replace(/å/g, "aa")
+      .normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+  function cityPath() {
+    return (cityInfo.id && cityInfo.version) ? "cities/" + cityInfo.id + "/" + cityInfo.version + ".json" : "";
+  }
+  function loadKey(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } }
+  function saveKey(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+  // On GitHub Pages (owner.github.io/repo/) the repository is the one the tool is served from, so a copy
+  // of the tool in someone else's repository reads their cities, never this one's.
+  function pagesRepo() {
+    var m = location.hostname.match(/^([a-z0-9-]+)\.github\.io$/i);
+    if (!m) return "";
+    var seg = location.pathname.split("/").filter(Boolean)[0];
+    return m[1] + "/" + (seg && !/\.html?$/i.test(seg) ? seg : m[1] + ".github.io");
+  }
+  function ghSettings() {
+    var s = loadKey(GH_SETTINGS_KEY) || {};
+    return { repo: s.repo || pagesRepo(), branch: s.branch || "", token: s.token || "" };
+  }
+  function setGhFile(f) {
+    ghFile = f;
+    saveKey(GH_FILE_KEY, f);
+    updateCityLabel();
+  }
+  function updateCityLabel() {
+    var label = document.getElementById("city-label");
+    if (label) {
+      label.textContent = cityInfo.name ? "· " + cityInfo.name + (cityInfo.version ? " (" + cityInfo.version + ")" : "") : "";
+    }
+    var status = document.getElementById("gh-status");
+    if (status) {
+      status.textContent = (ghFile && ghFile.path === cityPath()) ? "(" + ghFile.repo + "/" + ghFile.path + ")" : "(not saved to GitHub yet)";
+    }
+  }
+
+  function encPath(p) { return p.split("/").map(encodeURIComponent).join("/"); }
+  function ghErrorText(status, data, s) {
+    var msg = (data && data.message) || "";
+    if (status === 401) return "GitHub rejected the token (expired or mistyped). Check it under GitHub settings.";
+    if (status === 403 && /rate limit/i.test(msg)) return "GitHub's hourly limit for reading without a token is used up. Add a token under GitHub settings, or try again later.";
+    if (status === 403) return "The token isn't allowed to do this. It needs \"Contents: Read and write\" on " + s.repo + ".";
+    if (status === 404) return "Not found on GitHub. Check the repository name" + (s.token ? " and that the token has access to it." : " (a private repository needs a token).");
+    if (status === 409) return "The file changed on GitHub while saving. Open it again, then save.";
+    return "GitHub error " + status + (msg ? ": " + msg : "");
+  }
+  function ghApi(path, opts) {
+    var s = ghSettings();
+    opts = opts || {};
+    var headers = { "Accept": "application/vnd.github+json" };
+    if (s.token) headers.Authorization = "Bearer " + s.token;
+    if (opts.body) headers["Content-Type"] = "application/json";
+    return fetch("https://api.github.com" + path, {
+      method: opts.method || "GET", headers: headers, cache: "no-store",
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    }).then(function (r) {
+      return r.text().then(function (t) {
+        var data = null;
+        try { data = t ? JSON.parse(t) : null; } catch (e) {}
+        if (!r.ok) { var err = new Error(ghErrorText(r.status, data, s)); err.status = r.status; throw err; }
+        return data;
+      });
+    }, function () {
+      throw new Error("Couldn't reach GitHub. Check your connection (some embedded viewers block it; use the GitHub Pages address).");
+    });
+  }
+  function utf8ToBase64(str) {
+    var bytes = new TextEncoder().encode(str), bin = "";
+    for (var i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+  }
+  function base64ToUtf8(b64) {
+    var bin = atob(String(b64 || "").replace(/\s/g, "")), bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+  function ghBranch() {
+    var s = ghSettings();
+    if (s.branch) return Promise.resolve(s.branch);
+    return ghApi("/repos/" + s.repo).then(function (r) { return r.default_branch; });
+  }
+  function ghContentsUrl(path) { return "/repos/" + ghSettings().repo + "/contents/" + encPath(path); }
+  // ref: a branch, or a commit when opening an older state from History
+  function ghReadFile(path, ref) {
+    return ghApi(ghContentsUrl(path) + "?ref=" + encodeURIComponent(ref)).then(function (f) {
+      return { sha: f.sha, data: JSON.parse(base64ToUtf8(f.content)) };
+    });
+  }
+  function ghRemoteSha(path, branch) {
+    return ghApi(ghContentsUrl(path) + "?ref=" + encodeURIComponent(branch)).then(function (f) { return f.sha; }, function (e) {
+      if (e.status === 404) return null;
+      throw e;
+    });
+  }
+
+  // ---- the one dialog all GitHub actions share ----
+  function ghDialog(title) {
+    document.getElementById("gh-title").textContent = title;
+    var body = document.getElementById("gh-body");
+    body.innerHTML = "";
+    document.getElementById("gh-overlay").style.display = "flex";
+    return body;
+  }
+  function ghCloseDialog() { document.getElementById("gh-overlay").style.display = "none"; }
+  document.getElementById("gh-close").addEventListener("click", ghCloseDialog);
+  function el(tag, attrs, text) {
+    var e = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  function field(body, label, input, hint) {
+    var wrap = el("div", { "class": "newcity-field" });
+    wrap.appendChild(el("label", {}, label));
+    wrap.appendChild(input);
+    if (hint) { var p = el("p", { "class": "hint-small" }); p.innerHTML = hint; wrap.appendChild(p); }
+    body.appendChild(wrap);
+    return input;
+  }
+  function textInput(value, type) {
+    var i = el("input", { "class": "text-field", type: type || "text" });
+    i.value = value == null ? "" : String(value);
+    return i;
+  }
+  function showMsg(body, text, isError) {
+    var m = body.querySelector(".gh-msg") || body.appendChild(el("div", { "class": "gh-msg" }));
+    m.textContent = text;
+    m.classList.toggle("error", !!isError);
+    return m;
+  }
+  function needRepo(then) {
+    if (ghSettings().repo) return then();
+    openSettings("First tell the tool which GitHub repository holds your cities.", then);
+  }
+
+  // ---- settings: repository, branch, token ----
+  function openSettings(intro, after) {
+    var s = ghSettings();
+    var body = ghDialog("GitHub settings");
+    if (intro) body.appendChild(el("p", {}, intro));
+    var repo = field(body, "Repository (owner/name)", textInput(s.repo),
+      "Your own repository. Don't have one? <a href=\"https://github.com/new\" target=\"_blank\" rel=\"noopener\">Create an empty one on GitHub</a>; the tool adds the <code>cities/</code> folder on the first save." +
+      (pagesRepo() ? " Filled in from this page's address." : ""));
+    repo.placeholder = "e.g. your-name/my-cities";
+    var branch = field(body, "Branch (optional)", textInput(s.branch), "Leave empty to use the repository's default branch.");
+    var token = field(body, "Token (needed only for saving)", textInput(s.token, "password"),
+      "<a href=\"https://github.com/settings/personal-access-tokens/new\" target=\"_blank\" rel=\"noopener\">Create a fine-grained token</a>: " +
+      "under <i>Repository access</i> choose <i>Only select repositories</i> and pick this repository, then under <i>Permissions</i> set " +
+      "<i>Contents</i> to <i>Read and write</i>. The token is stored only in this browser.");
+    var saveBtn = body.appendChild(el("button", { type: "button", "class": "danger" }, "Save and test"));
+    var forgetBtn = body.appendChild(el("button", { type: "button" }, "Forget token"));
+    saveBtn.addEventListener("click", function () {
+      var r = repo.value.trim().replace(/^https?:\/\/github\.com\//i, "").replace(/\.git$/i, "").replace(/\/+$/, "");
+      if (!/^[\w.-]+\/[\w.-]+$/.test(r)) { showMsg(body, "The repository should look like owner/name.", true); return; }
+      saveKey(GH_SETTINGS_KEY, { repo: r, branch: branch.value.trim(), token: token.value.trim() });
+      showMsg(body, "Testing...");
+      ghApi("/repos/" + r).then(function (info) {
+        var t = ghSettings().token;
+        var text = !t ? "Connected to " + info.full_name + " for reading. Add a token to save." :
+          (info.permissions && info.permissions.push === false) ? "Connected to " + info.full_name + ", but your account can't write to it." :
+          "Connected to " + info.full_name + ". GitHub checks the token's write permission on the first save.";
+        showMsg(body, text);
+        if (after) setTimeout(after, 700);
+      }, function (e) { showMsg(body, e.message, true); });
+    });
+    forgetBtn.addEventListener("click", function () {
+      var cur = loadKey(GH_SETTINGS_KEY) || {};
+      delete cur.token;
+      saveKey(GH_SETTINGS_KEY, cur);
+      token.value = "";
+      showMsg(body, "Token removed from this browser.");
+    });
+  }
+  document.getElementById("gh-settings-btn").addEventListener("click", function () { openSettings(); });
+
+  // ---- open ----
+  function loadCityFile(path, data, latestSha) {
+    pushUndo();
+    applyFullState(data);
+    // the path is where the city lives, so it wins over whatever the file says about itself
+    var parts = path.match(/^cities\/([^\/]+)\/([^\/]+)\.json$/);
+    cityInfo.id = parts[1];
+    cityInfo.version = parts[2];
+    if (!cityInfo.name) cityInfo.name = parts[1].charAt(0).toUpperCase() + parts[1].slice(1);
+    setGhFile({ repo: ghSettings().repo, path: path, sha: latestSha });
+    autosaveNow();
+  }
+  function openFromGitHub() {
+    needRepo(function () {
+      var body = ghDialog("Open city from GitHub");
+      showMsg(body, "Reading " + ghSettings().repo + "...");
+      var branch;
+      ghBranch().then(function (b) {
+        branch = b;
+        return ghApi("/repos/" + ghSettings().repo + "/git/trees/" + encodeURIComponent(b) + "?recursive=1");
+      }).then(function (tree) {
+        var paths = (tree.tree || []).map(function (e) { return e.path; })
+          .filter(function (p) { return /^cities\/[^\/]+\/[^\/]+\.json$/.test(p); }).sort();
+        body.innerHTML = "";
+        if (!paths.length) {
+          body.appendChild(el("p", {}, "No cities in " + ghSettings().repo + " yet. Save one with Save to GitHub."));
+          return;
+        }
+        body.appendChild(el("p", {}, "Opening a city replaces the one on screen (Undo brings it back)."));
+        var list = body.appendChild(el("div", { "class": "gh-list" }));
+        var lastCity = "";
+        paths.forEach(function (p) {
+          var parts = p.split("/");
+          if (parts[1] !== lastCity) { lastCity = parts[1]; list.appendChild(el("div", { "class": "gh-list-head" }, parts[1])); }
+          var row = list.appendChild(el("div", { "class": "gh-row" }, parts[2].replace(/\.json$/, "")));
+          row.addEventListener("click", function () {
+            showMsg(body, "Opening " + p + "...");
+            ghReadFile(p, branch).then(function (f) {
+              loadCityFile(p, f.data, f.sha);
+              ghCloseDialog();
+            }, function (e) { showMsg(body, e.message, true); });
+          });
+        });
+      }).catch(function (e) { showMsg(body, e.message, true); });
+    });
+  }
+  document.getElementById("gh-open-btn").addEventListener("click", openFromGitHub);
+
+  // ---- history: the commits of this city's file ----
+  function openHistory() {
+    var path = cityPath();
+    if (!path) { ghDialog("History").appendChild(el("p", {}, "This city has no name or version yet, so it has no file on GitHub. Save it first.")); return; }
+    needRepo(function () {
+      var body = ghDialog("History of " + path);
+      showMsg(body, "Reading...");
+      var branch;
+      ghBranch().then(function (b) {
+        branch = b;
+        return ghApi("/repos/" + ghSettings().repo + "/commits?path=" + encodeURIComponent(path) + "&sha=" + encodeURIComponent(b) + "&per_page=100");
+      }).then(function (commits) {
+        body.innerHTML = "";
+        if (!commits.length) { body.appendChild(el("p", {}, "Nothing saved to GitHub yet for this city.")); return; }
+        body.appendChild(el("p", {}, "Every save to GitHub, newest first. Opening one shows the city as it was then; save it again to make it the newest state. Nothing in between is lost."));
+        var list = body.appendChild(el("div", { "class": "gh-list" }));
+        commits.forEach(function (c, i) {
+          var when = new Date(c.commit.author.date);
+          var row = list.appendChild(el("div", { "class": "gh-row" }));
+          row.appendChild(el("span", { "class": "gh-when" }, when.toLocaleDateString() + " " + when.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })));
+          row.appendChild(el("span", {}, c.commit.message.split("\n")[0] + (i === 0 ? " (newest)" : "")));
+          row.addEventListener("click", function () {
+            showMsg(body, "Opening...");
+            Promise.all([ghReadFile(path, c.sha), ghRemoteSha(path, branch)]).then(function (r) {
+              // keep the newest sha, so saving this older state counts as a normal save on top of it
+              loadCityFile(path, r[0].data, r[1]);
+              ghCloseDialog();
+            }, function (e) { showMsg(body, e.message, true); });
+          });
+        });
+      }).catch(function (e) { showMsg(body, e.message, true); });
+    });
+  }
+  document.getElementById("gh-history-btn").addEventListener("click", openHistory);
+
+  // ---- city details, and cloning to a new campaign ----
+  function cityDetailsDialog(clone, after) {
+    var body = ghDialog(clone ? "Clone to new campaign" : "City details");
+    body.appendChild(el("p", {}, clone ?
+      "Makes a separate version of this city for another campaign or era. From then on the two don't affect each other." :
+      "The city is saved as cities/<city>/<version>.json. Changing the name or version saves it under a new file; the old one stays on GitHub."));
+    var name = field(body, "City name", textInput(cityInfo.name));
+    var campaign = field(body, "Campaign (optional)", textInput(clone ? "" : cityInfo.campaign));
+    var year = field(body, "Year (optional, in-game)", textInput(clone ? "" : cityInfo.year));
+    var version = field(body, "Version name", textInput(clone ? "" : cityInfo.version),
+      "Becomes the file name. Filled in from the campaign; use the year or anything else for an era.");
+    var touched = !!version.value; // an existing version name is never overwritten
+    version.addEventListener("input", function () { touched = true; });
+    function autoVersion() {
+      if (!touched) version.value = slugify(campaign.value) || slugify(year.value) || (clone ? "" : "base");
+    }
+    campaign.addEventListener("input", autoVersion);
+    year.addEventListener("input", autoVersion);
+    if (!version.value) autoVersion();
+    var ok = body.appendChild(el("button", { type: "button", "class": "danger" }, clone ? "Clone" : "Continue"));
+    ok.addEventListener("click", function () {
+      var id = slugify(name.value), v = slugify(version.value);
+      if (!id || !v) { showMsg(body, "Give the city a name and a version name.", true); return; }
+      if (clone && id === cityInfo.id && v === cityInfo.version) { showMsg(body, "Pick a version name different from the current one (" + v + ").", true); return; }
+      cityInfo = cleanCityInfo({ id: id, name: name.value.trim(), version: v, campaign: campaign.value.trim(), year: parseYear(year.value) });
+      if (clone) setGhFile(null); else updateCityLabel();
+      autosaveNow();
+      if (after) after();
+      else if (!clone) ghCloseDialog();
+      else {
+        body.innerHTML = "";
+        body.appendChild(el("p", {}, "This is now " + cityPath() + ". Use Save to GitHub to create it there."));
+      }
+    });
+  }
+  document.getElementById("gh-clone-btn").addEventListener("click", function () { cityDetailsDialog(true); });
+  document.getElementById("gh-details-btn").addEventListener("click", function () { cityDetailsDialog(false); });
+
+  // ---- save ----
+  function openSave() {
+    if (!cityPath()) { cityDetailsDialog(false, openSave); return; }
+    needRepo(function () {
+      var s = ghSettings();
+      if (!s.token) { openSettings("Saving needs a token for " + s.repo + ".", openSave); return; }
+      var path = cityPath();
+      var body = ghDialog("Save to GitHub");
+      body.appendChild(el("p", {}, "Saves to " + s.repo + "/" + path + ". Every save is kept, so you can go back to it under History."));
+      var note = field(body, "Note (optional)", textInput(""), "Shown in History, e.g. \"after session 12\".");
+      var go = body.appendChild(el("button", { type: "button", "class": "danger" }, "Save"));
+      go.addEventListener("click", function () {
+        go.disabled = true;
+        showMsg(body, "Saving...");
+        var branch;
+        ghBranch().then(function (b) {
+          branch = b;
+          return ghRemoteSha(path, b);
+        }).then(function (remoteSha) {
+          var ours = ghFile && ghFile.repo === s.repo && ghFile.path === path;
+          if (remoteSha && !(ours && ghFile.sha === remoteSha)) {
+            var question = ours ?
+              "This city was changed on GitHub after you opened it (perhaps from another browser). Saving replaces that state, though History keeps it. Save anyway?" :
+              path + " already exists on GitHub and isn't the file you opened. Saving replaces it, though History keeps the old state. Save anyway?";
+            if (!window.confirm(question)) return null;
+          }
+          var stamp = new Date().toISOString().slice(0, 16).replace("T", " ");
+          return ghApi(ghContentsUrl(path), { method: "PUT", body: {
+            message: note.value.trim() || (cityInfo.name + " (" + cityInfo.version + "), " + stamp),
+            content: utf8ToBase64(JSON.stringify(buildFullState(), null, 2) + "\n"),
+            sha: remoteSha || undefined,
+            branch: branch
+          } });
+        }).then(function (res) {
+          go.disabled = false;
+          if (!res) { showMsg(body, "Not saved."); return; }
+          setGhFile({ repo: s.repo, path: path, sha: res.content.sha });
+          showMsg(body, "Saved to " + s.repo + "/" + path + ".");
+        }).catch(function (e) { go.disabled = false; showMsg(body, e.message, true); });
+      });
+    });
+  }
+  document.getElementById("gh-save-btn").addEventListener("click", openSave);
 
   document.getElementById("legend-btn").addEventListener("click", function () {
     renderLegend();
@@ -4767,6 +5191,7 @@
     el.addEventListener("toggle", saveSidebarCollapse);
   });
   loadSidebarCollapse();
+  ghFile = loadKey(GH_FILE_KEY);
 
   loadFromDOM();
   renderDistrictList();
@@ -4781,6 +5206,7 @@
   updateUndoButton();
   resize();
   loadAutosave();
+  updateCityLabel();
   ["voronoi", "ring", "community"].forEach(function (s) {
     document.getElementById("style-" + s).classList.toggle("on", s === layoutStyle);
   });
